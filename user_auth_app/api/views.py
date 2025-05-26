@@ -1,6 +1,6 @@
 from rest_framework import generics
 from user_auth_app.models import UserProfile
-from .serializers import UserProfileSerializer, RegistrationSerializer
+from .serializers import UserProfileSerializer, RegistrationSerializer, CustomAuthTokenSerializer
 from rest_framework.views import APIView
 from rest_framework.permissions import AllowAny
 from rest_framework.authtoken.models import Token
@@ -30,7 +30,7 @@ class RegistrationView(APIView):
             token, created = Token.objects.get_or_create(user=saved_account)
             data = {
                 'token': token.key,
-                'username': saved_account.username,
+                'fullname': saved_account.username,
                 'email': saved_account.email,
                 "user_id": saved_account.id
             }
@@ -41,9 +41,10 @@ class RegistrationView(APIView):
 
 class CustomLoginView(ObtainAuthToken):
     permission_classes = [AllowAny]
+    serializer_class = CustomAuthTokenSerializer
 
-    def post(self, request):
-        serializer = self.serializer_class(data=request.data)
+    def post(self, request, *args, **kwargs):
+        serializer = self.serializer_class(data=request.data, context={'request': request})
         data = {}
 
         if serializer.is_valid():
@@ -51,7 +52,7 @@ class CustomLoginView(ObtainAuthToken):
             token, created = Token.objects.get_or_create(user=user)
             data = {
                 'token': token.key,
-                'username': user.username,
+                'fullname': user.username,
                 'email': user.email,
                 "user_id": user.id
             }
