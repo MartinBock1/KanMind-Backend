@@ -1,13 +1,20 @@
 from rest_framework import serializers
-from kanmind_app.models import Boards, Task
+
+from kanmind_app.models import Boards, BoardUser, Task
 
 
 class BoardsSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Boards
-        fields = ["id", "title", "member_count", "ticket_count", 
+        fields = ["id", "title", "member_count", "ticket_count",
                   "tasks_to_do_count", "tasks_high_prio_count", "owner_id"]
+
+
+class BoardUserSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = BoardUser
+        fields = ['board', 'user', 'role', 'joined_date']
 
 
 class TaskSerializer(serializers.ModelSerializer):
