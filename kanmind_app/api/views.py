@@ -137,9 +137,14 @@ class EmailCheckView(APIView):
             Response: Die Benutzerdaten als JSON, falls der Benutzer existiert, oder ein 404-Fehler.
         """
         email = request.query_params.get('email')
+
+        # Zusätzliche Fehlerprüfung: Überprüfe, ob die E-Mail-Adresse überhaupt im Query-Parameter vorhanden ist
+        if not email:
+            return Response({"error": "Email parameter is required."}, status=status.HTTP_400_BAD_REQUEST)
+
         try:
             user = User.objects.get(email=email)
             serializer = UserSerializer(user)
             return Response(serializer.data)
         except User.DoesNotExist:
-            return Response({}, status=status.HTTP_404_NOT_FOUND)
+            return Response({"error": "User with this email not found."}, status=status.HTTP_404_NOT_FOUND)
