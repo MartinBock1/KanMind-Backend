@@ -138,7 +138,7 @@ class BoardDetailView(generics.RetrieveUpdateDestroyAPIView):
     permission_classes = [IsAuthenticated]
     serializer_class = BoardDetailSerializer
     queryset = Board.objects.all()
-    lookup_field = 'id'  # Das Board wird anhand der 'id' im URL-Pfad abgerufen
+    lookup_field = 'id'   # Das Board wird anhand der 'id' im URL-Pfad abgerufen
     lookup_url_kwarg = 'board_id'   # Der URL-Param. für die Board-ID wird als 'board_id' erwartet
 
     def perform_destroy(self, instance):
