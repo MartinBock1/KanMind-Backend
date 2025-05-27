@@ -60,7 +60,8 @@ class BoardDetailSerializer(serializers.ModelSerializer):
     Serialisiert die Detailansicht eines Boards, einschließlich aller Mitglieder und Aufgaben.
 
     Attributes:
-        members (list[int]): Eine Liste der IDs der Mitglieder des Boards.
+        members (list[UserSerializer]): Eine Liste der Mitglieder des Boards, die als 
+                                         Serialisierte Objekte zurückgegeben werden.
         tasks (list[TaskSerializer]): Eine Liste der Aufgaben, die diesem Board zugewiesen sind.
     """
     members = serializers.PrimaryKeyRelatedField(
@@ -79,7 +80,7 @@ class BoardCreateSerializer(serializers.ModelSerializer):
 
     Attributes:
         members (list[int]): Eine Liste der IDs der Mitglieder, die dem Board hinzugefügt werden
-        sollen.
+                              sollen.
     """
     members = serializers.ListField(child=serializers.IntegerField())
 

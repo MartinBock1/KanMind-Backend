@@ -19,13 +19,13 @@ class BoardListCreateView(generics.ListCreateAPIView):
     View für das Abrufen einer Liste von Boards oder das Erstellen eines neuen Boards.
 
     Diese View erlaubt es authentifizierten Benutzern, eine Liste der Boards abzurufen, bei denen
-    der Benutzer entweder
-    der Eigentümer ist oder Mitglied eines Boards. Darüber hinaus können Benutzer neue Boards
-    erstellen.
+    der Benutzer entweder der Eigentümer ist oder Mitglied eines Boards. Darüber hinaus können
+    Benutzer neue Boards erstellen.
 
     Permissions:
         - IsAuthenticated: Nur authentifizierte Benutzer können diese View verwenden.
     """
+
     permission_classes = [IsAuthenticated]
 
     def get_serializer_class(self):
@@ -47,7 +47,7 @@ class BoardListCreateView(generics.ListCreateAPIView):
         Gibt eine Liste von Boards zurück, bei denen der Benutzer entweder der Eigentümer oder ein
         Mitglied ist.
 
-        - Die Boards werden mit zusätzlichen Annotationsdaten geliefert, wie:
+        Die Boards werden mit zusätzlichen Annotationsdaten geliefert, wie:
             - member_count: Anzahl der Mitglieder des Boards (einschließlich des Benutzers, falls
               er Mitglied ist).
             - ticket_count: Anzahl der Aufgaben, die dem Board zugewiesen sind.
@@ -55,10 +55,9 @@ class BoardListCreateView(generics.ListCreateAPIView):
             - tasks_high_prio_count: Anzahl der Aufgaben mit hoher Priorität.
 
         Die Abfrage filtert die Boards so, dass nur die Boards zurückgegeben werden, bei denen der
-        Benutzer entweder
-        der Eigentümer (`owner`) oder ein Mitglied (`members`) ist. Dabei wird die `distinct()`
-        -Methode verwendet, um doppelte Einträge zu vermeiden, falls der Benutzer sowohl
-        Eigentümer als auch Mitglied eines Boards ist.
+        Benutzer entweder der Eigentümer (`owner`) oder ein Mitglied (`members`) ist. Dabei wird
+        die `distinct()`-Methode verwendet, um doppelte Einträge zu vermeiden, falls der Benutzer
+        sowohl Eigentümer als auch Mitglied eines Boards ist.
 
         Das Ergebnis enthält für jedes Board die folgenden berechneten Felder:
             - **member_count**: Die Anzahl der eindeutigen Mitglieder des Boards.
@@ -68,9 +67,8 @@ class BoardListCreateView(generics.ListCreateAPIView):
 
         Returns:
             queryset (QuerySet): Eine Liste von Boards mit den annotierten Daten, die zusätzliche
-            Informationen über
-            Mitglieder und Aufgaben liefern.
-"""
+            Informationen über Mitglieder und Aufgaben liefern.
+        """
         return Board.objects.filter(
             Q(owner=self.request.user) |
             Q(members=self.request.user)
