@@ -29,7 +29,8 @@ class Task(models.Model):
         board (Board): Das Board, dem diese Aufgabe zugeordnet ist.
         title (str): Der Titel der Aufgabe.
         description (str): Eine detaillierte Beschreibung der Aufgabe.
-        status (str): Der aktuelle Status der Aufgabe. Mögliche Werte: 'to-do', 'in-progress', 'review', 'done'.
+        status (str): Der aktuelle Status der Aufgabe. Mögliche Werte: 'to-do', 'in-progress',
+        'review', 'done'.
         priority (str): Die Priorität der Aufgabe. Mögliche Werte: 'low', 'medium', 'high'.
         assignee (User): Der Benutzer, der die Aufgabe übernehmen soll (optional).
         reviewer (User): Der Benutzer, der die Aufgabe überprüfen soll (optional).

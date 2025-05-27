@@ -60,10 +60,11 @@ class BoardDetailSerializer(serializers.ModelSerializer):
     Serialisiert die Detailansicht eines Boards, einschließlich aller Mitglieder und Aufgaben.
 
     Attributes:
-        members (list[UserSerializer]): Eine Liste der Mitglieder des Boards.
+        members (list[int]): Eine Liste der IDs der Mitglieder des Boards.
         tasks (list[TaskSerializer]): Eine Liste der Aufgaben, die diesem Board zugewiesen sind.
     """
-    members = UserSerializer(many=True)
+    members = serializers.PrimaryKeyRelatedField(
+        queryset=User.objects.all(), many=True)  # IDs der Mitglieder
     tasks = TaskSerializer(many=True)
 
     class Meta:
@@ -73,10 +74,12 @@ class BoardDetailSerializer(serializers.ModelSerializer):
 
 class BoardCreateSerializer(serializers.ModelSerializer):
     """
-    Serialisiert die Eingabedaten zur Erstellung eines neuen Boards und ermöglicht es, Mitglieder hinzuzufügen.
+    Serialisiert die Eingabedaten zur Erstellung eines neuen Boards und ermöglicht es, Mitglieder
+    hinzuzufügen.
 
     Attributes:
-        members (list[int]): Eine Liste der IDs der Mitglieder, die dem Board hinzugefügt werden sollen.
+        members (list[int]): Eine Liste der IDs der Mitglieder, die dem Board hinzugefügt werden
+        sollen.
     """
     members = serializers.ListField(child=serializers.IntegerField())
 
@@ -86,7 +89,8 @@ class BoardCreateSerializer(serializers.ModelSerializer):
 
     def create(self, validated_data):
         """
-        Erstellt ein neues Board und fügt Mitglieder hinzu. Der anfragende Benutzer wird als Eigentümer gesetzt.
+        Erstellt ein neues Board und fügt Mitglieder hinzu. Der anfragende Benutzer wird als
+        Eigentümer gesetzt.
 
         Args:
             validated_data (dict): Die validierten Eingabedaten für das neue Board.
