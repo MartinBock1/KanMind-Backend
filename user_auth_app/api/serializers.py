@@ -1,13 +1,6 @@
 from rest_framework import serializers
-from user_auth_app.models import UserProfile
 from django.contrib.auth.models import User
 from django.contrib.auth import authenticate
-
-
-class UserProfileSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = UserProfile
-        fields = ['user', 'bio', 'location']
 
 
 class RegistrationSerializer(serializers.ModelSerializer):
