@@ -1,4 +1,4 @@
-from rest_framework import generics, status
+from rest_framework import generics, status, serializers
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework.permissions import IsAuthenticated
@@ -12,11 +12,11 @@ from .serializers import (
     BoardDetailSerializer,
     BoardCreateSerializer,
     UserSerializer,
+    TaskSerializer,
 )
 
 
 class BoardListCreateView(generics.ListCreateAPIView):
-
     permission_classes = [IsAuthenticated]
 
     def get_serializer_class(self):
@@ -35,8 +35,27 @@ class BoardListCreateView(generics.ListCreateAPIView):
             tasks_high_prio_count=Count('tasks', filter=Q(tasks__priority='high')),
         )
 
-    def perform_create(self, serializer):
-        serializer.save()
+    def create(self, request, *args, **kwargs):
+        # Eingabedaten validieren und speichern
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        board = serializer.save()
+
+        # Annotierte Version des erstellten Boards laden
+        annotated_board = (
+            Board.objects.filter(id=board.id)
+            .annotate(
+                member_count=Count('members', distinct=True),
+                ticket_count=Count('tasks', distinct=True),
+                tasks_to_do_count=Count('tasks', filter=Q(tasks__status='to-do')),
+                tasks_high_prio_count=Count('tasks', filter=Q(tasks__priority='high')),
+            )
+            .first()
+        )
+
+        # Mit dem List-Serializer serialisieren und zurückgeben
+        output_serializer = BoardListSerializer(annotated_board)
+        return Response(output_serializer.data, status=status.HTTP_201_CREATED)
 
 
 class BoardDetailView(generics.RetrieveUpdateDestroyAPIView):
@@ -65,3 +84,13 @@ class EmailCheckView(APIView):
         except User.DoesNotExist:
             return Response({"error": "User with this email not found."},
                             status=status.HTTP_404_NOT_FOUND)
+
+
+class TaskListView(generics.ListAPIView):
+    permission_classes = [IsAuthenticated]
+    queryset = Task.objects.all()
+    serializer_class = TaskSerializer
+    
+    class Meta:
+        model = Task
+        fields = '__all__'

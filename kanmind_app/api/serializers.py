@@ -57,3 +57,7 @@ class BoardCreateSerializer(serializers.ModelSerializer):
         board = Board.objects.create(title=validated_data['title'], owner=request.user)
         board.members.set(User.objects.filter(id__in=members_ids + [request.user.id]))
         return board
+
+    def to_representation(self, instance):
+        # Nutze den ListSerializer zur Ausgabe
+        return BoardListSerializer(instance).data
