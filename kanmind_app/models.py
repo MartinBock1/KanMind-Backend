@@ -22,21 +22,6 @@ class Board(models.Model):
 
 
 class Task(models.Model):
-    """
-    Repräsentiert eine Aufgabe, die einem bestimmten Board zugeordnet ist.
-
-    Attribute:
-        board (Board): Das Board, dem diese Aufgabe zugeordnet ist.
-        title (str): Der Titel der Aufgabe.
-        description (str): Eine detaillierte Beschreibung der Aufgabe.
-        status (str): Der aktuelle Status der Aufgabe. Mögliche Werte: 'to-do', 'in-progress',
-        'review', 'done'.
-        priority (str): Die Priorität der Aufgabe. Mögliche Werte: 'low', 'medium', 'high'.
-        assignee (User): Der Benutzer, der die Aufgabe übernehmen soll (optional).
-        reviewer (User): Der Benutzer, der die Aufgabe überprüfen soll (optional).
-        due_date (date): Das Fälligkeitsdatum der Aufgabe (optional).
-        comments_count (int): Die Anzahl der Kommentare zur Aufgabe.
-    """
     STATUS_CHOICES = [
         ('to-do', 'To Do'),
         ('in-progress', 'In Progress'),
@@ -56,9 +41,9 @@ class Task(models.Model):
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='to-do')
     priority = models.CharField(max_length=20, choices=PRIORITY_CHOICES, default='medium')
     assignee = models.ForeignKey(User, on_delete=models.SET_NULL,
-                                 null=True, blank=True, related_name='assigned_tasks')
-    reviewer = models.ForeignKey(User, on_delete=models.SET_NULL,
-                                 null=True, blank=True, related_name='reviewed_tasks')
+                                    null=True, blank=True, related_name='assigned_tasks')
+    reviewer = models.ForeignKey(User, on_delete=models.SET_NULL, null=True,
+                                    blank=True, related_name='reviewed_tasks')
     due_date = models.DateField(null=True, blank=True)
     comments_count = models.IntegerField(default=0)
 

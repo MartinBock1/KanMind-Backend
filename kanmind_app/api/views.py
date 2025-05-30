@@ -6,13 +6,14 @@ from rest_framework.permissions import IsAuthenticated
 from django.contrib.auth.models import User
 from django.db.models import Count, Q
 from kanmind_app.models import Board, Task
-from .permissions import IsOwnerOrMember
+from .permissions import IsOwnerOrMember, IsBoardMemberOrReadOnly
 from .serializers import (
     BoardListSerializer,
     BoardDetailSerializer,
     BoardCreateSerializer,
     UserSerializer,
     TaskSerializer,
+    TaskDetailSerializer,
 )
 
 
@@ -86,7 +87,7 @@ class EmailCheckView(APIView):
                             status=status.HTTP_404_NOT_FOUND)
 
 
-class TaskListView(generics.ListAPIView):
+class TaskListView(generics.ListCreateAPIView):
     permission_classes = [IsAuthenticated]
     queryset = Task.objects.all()
     serializer_class = TaskSerializer
@@ -94,3 +95,17 @@ class TaskListView(generics.ListAPIView):
     class Meta:
         model = Task
         fields = '__all__'
+    
+    def perform_create(self, serializer):
+        # Falls du z.B. den aktuellen User als Assignee automatisch setzen möchtest,
+        # kannst du das hier tun, z.B.:
+        # serializer.save(assignee=self.request.user)
+        serializer.save()
+
+
+class TaskDetailView(generics.RetrieveUpdateDestroyAPIView):
+    permission_classes = [IsAuthenticated, IsBoardMemberOrReadOnly]
+    serializer_class = TaskDetailSerializer
+    queryset = Task.objects.all()
+    lookup_field = 'id'   # Das Board wird anhand der 'id' im URL-Pfad abgerufen
+    lookup_url_kwarg = 'task_id'   # Der URL-Param. für die Board-ID wird als 'board_id' erwartet
