@@ -3,10 +3,12 @@ from rest_framework import generics, status, serializers
 from rest_framework.response import Response
 from rest_framework.generics import ListAPIView
 from rest_framework.permissions import IsAuthenticated
+from rest_framework.exceptions import PermissionDenied, NotFound
 
-from django.contrib.auth.models import User
 from django.db.models import Count, Q
-from kanmind_app.models import Board, Task
+from django.contrib.auth.models import User
+from django.shortcuts import get_object_or_404
+from kanmind_app.models import Board, Task, Comment
 from .permissions import IsOwnerOrMember, IsBoardMemberOrReadOnly
 from .serializers import (
     BoardListSerializer,
@@ -15,6 +17,7 @@ from .serializers import (
     UserSerializer,
     TaskSerializer,
     TaskDetailSerializer,
+    CommentSerializer,
 )
 
 
@@ -123,3 +126,43 @@ class TasksAssignedToMeView(ListAPIView):
 
     def get_queryset(self):
         return Task.objects.filter(assignee=self.request.user)
+
+
+class TaskCommentListView(generics.ListCreateAPIView):
+    serializer_class = CommentSerializer
+    permission_classes = [IsAuthenticated]
+
+    def get_task(self):
+        task_id = self.kwargs['task_id']
+        task = get_object_or_404(Task, id=task_id)
+        # Prüfen, ob der Benutzer Mitglied des Boards ist
+        user = self.request.user
+        if user != task.board.owner and user not in task.board.members.all():
+            raise PermissionDenied("You must be a board member to access these comments.")
+        return task
+
+    def get_queryset(self):
+        task = self.get_task()
+        return Comment.objects.filter(task=task).order_by('created_at')
+
+    def perform_create(self, serializer):
+        task = self.get_task()
+        serializer.save(task=task, author=self.request.user)
+
+
+class CommentDeleteView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def delete(self, request, task_id, comment_id):
+        # Task und Kommentar laden oder 404 zurückgeben
+        task = get_object_or_404(Task, id=task_id)
+        comment = get_object_or_404(Comment, id=comment_id, task=task)
+
+        # Prüfen, ob der anfragende User der Ersteller des Kommentars ist
+        if comment.author != request.user:
+            return Response({"detail": "Nur der Ersteller darf den Kommentar löschen."},
+                            status=status.HTTP_403_FORBIDDEN)
+
+        # Kommentar löschen
+        comment.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)

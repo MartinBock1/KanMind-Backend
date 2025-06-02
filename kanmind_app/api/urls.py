@@ -7,6 +7,8 @@ from .views import (
     TaskDetailView,
     TasksAssignedToMeView,
     TasksReviewingView,
+    TaskCommentListView,
+    CommentDeleteView,
 )
 
 urlpatterns = [
@@ -17,4 +19,7 @@ urlpatterns = [
     path('tasks/<int:task_id>/', TaskDetailView.as_view(), name='task-detail'),
     path('tasks/assigned_to_me/', TasksAssignedToMeView.as_view(), name='task-assignee'),
     path('tasks/reviewing/', TasksReviewingView.as_view(), name='task-reviewer'),
+    path('tasks/<int:task_id>/comments/', TaskCommentListView.as_view(), name='task-comments'),
+    path('tasks/<int:task_id>/comments/<int:comment_id>/',
+         CommentDeleteView.as_view(), name='comment-delete'),
 ]

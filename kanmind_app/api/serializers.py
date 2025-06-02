@@ -1,6 +1,6 @@
 from rest_framework import serializers
 from django.contrib.auth.models import User
-from kanmind_app.models import Board, Task
+from kanmind_app.models import Board, Task, Comment
 
 
 class UserSerializer(serializers.ModelSerializer):
@@ -140,3 +140,16 @@ class BoardCreateSerializer(serializers.ModelSerializer):
     def to_representation(self, instance):
         # Nutze den ListSerializer zur Ausgabe
         return BoardListSerializer(instance).data
+
+
+class CommentSerializer(serializers.ModelSerializer):
+    author = serializers.SerializerMethodField()
+    created_at = serializers.DateTimeField(format="%Y-%m-%dT%H:%M:%S")
+
+    class Meta:
+        model = Comment
+        fields = ['id', 'created_at', 'author', 'content']
+        read_only_fields = ['id', 'created_at', 'author']
+
+    def get_author(self, obj):
+        return obj.author.get_full_name()
