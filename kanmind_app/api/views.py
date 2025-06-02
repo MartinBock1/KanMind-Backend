@@ -97,9 +97,6 @@ class TaskListView(generics.ListCreateAPIView):
         fields = '__all__'
     
     def perform_create(self, serializer):
-        # Falls du z.B. den aktuellen User als Assignee automatisch setzen möchtest,
-        # kannst du das hier tun, z.B.:
-        # serializer.save(assignee=self.request.user)
         serializer.save()
 
 
