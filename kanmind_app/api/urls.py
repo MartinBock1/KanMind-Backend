@@ -5,6 +5,8 @@ from .views import (
     EmailCheckView,
     TaskListView,
     TaskDetailView,
+    TasksAssignedToMeView,
+    TasksReviewingView,
 )
 
 urlpatterns = [
@@ -13,4 +15,6 @@ urlpatterns = [
     path('email-check/', EmailCheckView.as_view(), name='email-check'),
     path('tasks/', TaskListView.as_view(), name='task-list'),
     path('tasks/<int:task_id>/', TaskDetailView.as_view(), name='task-detail'),
+    path('tasks/assigned_to_me/', TasksAssignedToMeView.as_view(), name='task-assignee'),
+    path('tasks/reviewing/', TasksReviewingView.as_view(), name='task-reviewer'),
 ]

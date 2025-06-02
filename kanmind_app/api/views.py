@@ -1,6 +1,7 @@
+from rest_framework.views import APIView
 from rest_framework import generics, status, serializers
 from rest_framework.response import Response
-from rest_framework.views import APIView
+from rest_framework.generics import ListAPIView
 from rest_framework.permissions import IsAuthenticated
 
 from django.contrib.auth.models import User
@@ -106,3 +107,19 @@ class TaskDetailView(generics.RetrieveUpdateDestroyAPIView):
     queryset = Task.objects.all()
     lookup_field = 'id'   # Das Board wird anhand der 'id' im URL-Pfad abgerufen
     lookup_url_kwarg = 'task_id'   # Der URL-Param. für die Board-ID wird als 'board_id' erwartet
+
+
+class TasksReviewingView(ListAPIView):
+    permission_classes = [IsAuthenticated]
+    serializer_class = TaskSerializer
+
+    def get_queryset(self):
+        return Task.objects.filter(reviewer=self.request.user)
+
+
+class TasksAssignedToMeView(ListAPIView):
+    permission_classes = [IsAuthenticated]
+    serializer_class = TaskSerializer
+
+    def get_queryset(self):
+        return Task.objects.filter(assignee=self.request.user)
