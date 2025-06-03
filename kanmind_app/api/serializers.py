@@ -1,5 +1,6 @@
 from rest_framework import serializers
 from django.contrib.auth.models import User
+
 from kanmind_app.models import Board, Task, Comment
 from .helpers import validate_task_detail, update_task_detail
 

@@ -1,6 +1,5 @@
 from rest_framework import serializers
 from rest_framework.exceptions import PermissionDenied
-
 from django.db.models import Count, Q
 from django.shortcuts import get_object_or_404
 from django.contrib.auth.models import User
