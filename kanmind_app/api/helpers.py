@@ -4,7 +4,7 @@ from django.db.models import Count, Q
 from django.shortcuts import get_object_or_404
 from django.contrib.auth.models import User
 
-from kanmind_app.models import User, Board, Task, Comment
+from kanmind_app.models import Board, Task, Comment
 
 
 def check_user_membership(user, board):

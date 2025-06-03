@@ -46,7 +46,7 @@ class BoardViewSet(viewsets.ModelViewSet):
         - 'create' -> BoardCreateSerializer
         - 'list'   -> BoardListSerializer
         """
-        return get_serializer_class_for_method(self.action)
+        return get_serializer_class_for_method(self.request.method)
 
     def get_queryset(self):
         """
@@ -282,7 +282,7 @@ class TaskCommentViewSet(viewsets.ModelViewSet):
     """
     serializer_class = CommentSerializer
     permission_classes = [IsAuthenticated]
-    http_method_names = ['get', 'post']  # Restrict to only list and create
+    http_method_names = ['get', 'post']
     queryset = Comment.objects.none()  # Dummy to satisfy DRF registration
 
     def get_task(self):

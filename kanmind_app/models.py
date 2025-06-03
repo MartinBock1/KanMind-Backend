@@ -16,6 +16,11 @@ class Board(models.Model):
     title = models.CharField(max_length=255)
     owner = models.ForeignKey(User, on_delete=models.CASCADE, related_name='owned_boards')
     members = models.ManyToManyField(User, related_name='boards')
+    
+    class Meta:
+        verbose_name = 'Board'
+        verbose_name_plural = 'Boards'
+        ordering = ['id']
 
     def __str__(self):
         return self.title
@@ -58,6 +63,11 @@ class Task(models.Model):
     reviewer = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True,
                                  related_name='reviewed_tasks')
     due_date = models.DateField(null=True, blank=True)
+    
+    class Meta:
+        verbose_name = 'Task'
+        verbose_name_plural = 'Tasks'
+        ordering = ['id']
 
     def __str__(self):
         return self.title
@@ -77,3 +87,8 @@ class Comment(models.Model):
     author = models.ForeignKey(User, on_delete=models.CASCADE)
     content = models.TextField()
     created_at = models.DateTimeField(auto_now_add=True)
+    
+    class Meta:
+        verbose_name = 'Comment'
+        verbose_name_plural = 'Comments'
+        ordering = ['created_at']

@@ -13,7 +13,7 @@ from .views import (
 )
 
 router = DefaultRouter()
-router.register(r'boards', BoardViewSet, basename='board-list-create'),
+router.register(r'boards', BoardViewSet, basename='board-list-create')
 router.register(r'tasks', TaskViewSet, basename='task-list')
 
 task_comment = TaskCommentViewSet.as_view({
