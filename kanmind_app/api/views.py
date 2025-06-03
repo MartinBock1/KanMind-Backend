@@ -1,8 +1,9 @@
 from rest_framework.views import APIView
-from rest_framework import generics, viewsets, status
+from rest_framework import generics, status
 from rest_framework.response import Response
 from rest_framework.generics import ListAPIView
 from rest_framework.permissions import IsAuthenticated
+
 from django.db.models import Count, Q
 from django.contrib.auth.models import User
 from django.shortcuts import get_object_or_404
@@ -27,24 +28,25 @@ from .helpers import (
 )
 
 
-class BoardViewSet(viewsets.ModelViewSet):
+class BoardListCreateView(generics.ListCreateAPIView):
     """
-    A viewset for listing and creating boards.
+    API view for listing and creating boards.
 
-    - GET (list): Returns a list of boards the current user owns or is a member of,
+    - GET: Returns a list of boards the current user owns or is a member of,
       with annotation data (e.g., member count, ticket count).
-    - POST (create): Creates a new board and automatically includes the requesting user
+    - POST: Creates a new board and automatically includes the requesting user
       as both the owner and a member. Returns the newly created board with annotations.
 
-    Only 'list' and 'create' actions are supported.
+    This view uses dynamic serializer selection and helper functions
+    to keep the logic clean and reusable.
     """
     permission_classes = [IsAuthenticated]
 
     def get_serializer_class(self):
         """
-        Selects the serializer class based on the action:
-        - 'create' -> BoardCreateSerializer
-        - 'list'   -> BoardListSerializer
+        Selects the serializer class based on the HTTP method.
+        - POST -> BoardCreateSerializer
+        - GET  -> BoardListSerializer
         """
         return get_serializer_class_for_method(self.request.method)
 
@@ -142,46 +144,46 @@ class EmailCheckView(APIView):
                             status=status.HTTP_404_NOT_FOUND)
 
 
-class TaskViewSet(viewsets.ModelViewSet):
+class TaskListView(generics.ListCreateAPIView):
     """
-    A viewset for listing and creating tasks.
+    API view to list all tasks or create a new task.
 
-    Actions:
-        - list (GET): Returns a list of all tasks in the system.
-          Each task includes an annotated `comments_count` field, showing
-          the number of related comments. Access is limited to authenticated users.
-
-        - create (POST): Allows creation of a new task. The request must be authenticated.
-          You can extend `perform_create()` to add additional logic such as setting
-          the task creator.
+    Methods:
+        - GET: Returns a list of all tasks available in the system.
+          Each task includes an annotated 'comments_count' field, which indicates
+          how many comments are associated with it. Only authenticated users can access this list.
+        
+        - POST: Allows the creation of a new task. The user must be authenticated.
+          Additional logic (e.g. assigning the creator automatically) can be added
+          via the `perform_create()` method.
 
     Permissions:
         - Access is restricted to authenticated users only.
 
     Attributes:
-        - permission_classes (list): Specifies that only authenticated users can access this view.
-        - serializer_class (TaskSerializer): Used for both reading and writing task data.
+        permission_classes (list): Specifies that only authenticated users can access this view.
+        serializer_class (TaskSerializer): Specifies the serializer used for both GET and POST
+        operations.
 
     Notes:
-        - The queryset is dynamically annotated with `comments_count` using Django’s Count aggregation.
-        - The `comments_count` is not stored in the database but added at query time.
+        - The queryset is overridden via `get_queryset()` to dynamically annotate
+          each task with `comments_count`, using Django's `Count` aggregation.
+        - The field `comments_count` is not part of the Task model itself, but added at query
+          time.
     """
     permission_classes = [IsAuthenticated]
+    # queryset = Task.objects.all()
     serializer_class = TaskSerializer
-    queryset = Task.objects.none()  # Dummy queryset to avoid DRF registration error
-
+    
     def get_queryset(self):
-        """
-        Returns all tasks annotated with the number of associated comments.
-        """
         return Task.objects.annotate(
             comments_count=Count('comments')
         )
 
     def perform_create(self, serializer):
         """
-        Called when a new task is created via POST.
-        Extend this method to auto-assign the creator or perform other logic.
+        Called when saving a new task instance via POST.
+        This method can be extended to add additional logic (e.g., auto-assigning creator).
         """
         serializer.save()
 
@@ -265,46 +267,38 @@ class TasksAssignedToMeView(ListAPIView):
         return Task.objects.filter(assignee=self.request.user)
 
 
-class TaskCommentViewSet(viewsets.ModelViewSet):
+class TaskCommentListView(generics.ListCreateAPIView):
     """
-    A viewset for listing and creating comments on a specific task.
+    API view to list or create comments on a specific task.
 
-    Access Control:
-        Only users who are owners or members of the board associated with the task
-        can view or add comments.
+    Only users who are members or owners of the board associated with the task
+    are allowed to access or create comments via this endpoint.
 
-    Actions:
-        - list (GET): Lists all comments for the specified task, ordered by creation time.
-        - create (POST): Adds a new comment to the specified task, linked to the authenticated user.
+    Methods:
+        get_task:
+            Retrieves the Task instance by ID and verifies the requesting user's
+            membership or ownership on the related board. Raises PermissionDenied
+            if the user is unauthorized.
 
-    Notes:
-        The task is identified via the `task_id` URL keyword argument.
+        get_queryset:
+            Returns all comments related to the task, ordered by creation date.
+
+        perform_create:
+            Creates a new comment associated with the task and the authenticated user.
     """
     serializer_class = CommentSerializer
     permission_classes = [IsAuthenticated]
-    http_method_names = ['get', 'post']
-    queryset = Comment.objects.none()  # Dummy to satisfy DRF registration
 
     def get_task(self):
-        """
-        Retrieves the Task instance and checks if the user is authorized
-        (owner or member of the board). Raises PermissionDenied if unauthorized.
-        """
         return get_task_for_user(self.kwargs['task_id'], self.request.user)
 
     def get_queryset(self):
-        """
-        Returns all comments for the given task, ordered by creation date.
-        """
         return get_comments_for_task(self.get_task())
 
     def perform_create(self, serializer):
-        """
-        Creates a new comment on the task and associates it with the requesting user.
-        """
         task = self.get_task()
         user = self.request.user
-        create_comment(serializer, task, user)
+        comment = create_comment(serializer, task, user)
 
 
 class CommentDeleteView(APIView):
