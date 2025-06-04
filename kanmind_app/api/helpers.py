@@ -40,6 +40,56 @@ def extract_user_ids(attrs):
     return user_ids
 
 
+def create_board_with_members_and_annotations(serializer, user):
+    """
+    Creates a new board, assigns the given user as the owner, adds members,
+    and returns the board instance with annotations.
+
+    Steps:
+    1. Saves the board instance with the requesting user as the owner.
+    2. Retrieves member IDs from the validated serializer data.
+    3. Adds those members to the board, including the current user.
+    4. Returns the created board, annotated with additional info
+       such as member count and task statistics.
+
+    Args:
+        serializer (Serializer): The serializer containing validated board data.
+        user (User): The currently authenticated user (board creator).
+
+    Returns:
+        Board: The created board instance with annotations (e.g., member count).
+    """
+    board = serializer.save(owner=user)
+    members_ids = serializer.validated_data['members']
+    board.members.set([*members_ids, user.id])
+    return get_annotated_boards_for_user(user).get(id=board.id)
+
+
+def update_task_with_permission_check(instance, validated_data, user):
+    """
+    Validates and updates a Task instance while ensuring the user has the correct permissions.
+
+    This function performs the following:
+    1. Validates that the user has permission to update the task (must be board member or owner).
+    2. Ensures the `board` field is not being changed.
+    3. Checks that assignee and reviewer (if provided) are valid members of the board.
+    4. Applies the validated updates to the Task instance.
+
+    Args:
+        instance (Task): The Task object to be updated.
+        validated_data (dict): The serializer-validated data to apply.
+        user (User): The currently authenticated user attempting the update.
+
+    Returns:
+        Task: The updated Task instance.
+
+    Raises:
+        serializers.ValidationError: If validation fails due to permission or data issues.
+    """
+    validated = validate_task_detail(instance, validated_data, user)
+    return update_task_detail(instance, validated)
+
+
 def update_task_assignee_and_reviewer(instance, assignee_id, reviewer_id):
     """
     Updates the assignee and reviewer fields on the Task instance.
@@ -124,25 +174,34 @@ def update_task_detail(instance, validated_data):
     return instance
 
 
-def get_serializer_class_for_method(method):
+def get_tasks_for_reviewer(user):
     """
-    Returns the appropriate serializer class based on the HTTP method.
+    Returns a queryset of tasks where the given user is set as the reviewer.
 
-    This function imports the serializer classes inside the function
-    to avoid circular import issues.
+    Each task is annotated with the number of associated comments using `comments_count`.
 
     Args:
-        method (str): The HTTP method (e.g., 'GET', 'POST').
+        user (User): The user whose reviewing tasks should be fetched.
 
     Returns:
-        serializers.ModelSerializer:
-            - BoardCreateSerializer if method is 'POST'
-            - BoardListSerializer otherwise
+        QuerySet: Annotated queryset of Task objects where the user is the reviewer.
     """
-    from .serializers import BoardCreateSerializer, BoardListSerializer
-    if method == 'POST':
-        return BoardCreateSerializer
-    return BoardListSerializer
+    return Task.objects.annotate(comments_count=Count('comments')).filter(reviewer=user)
+
+
+def get_tasks_assigned_to_user(user):
+    """
+    Returns a queryset of tasks assigned to the given user.
+
+    Each task is annotated with the number of associated comments using `comments_count`.
+
+    Args:
+        user (User): The user whose assigned tasks should be retrieved.
+
+    Returns:
+        QuerySet: Annotated queryset of Task objects where the user is the assignee.
+    """
+    return Task.objects.annotate(comments_count=Count('comments')).filter(assignee=user)
 
 
 def get_annotated_boards_for_user(user):
@@ -158,18 +217,6 @@ def get_annotated_boards_for_user(user):
         tasks_to_do_count=Count('tasks', filter=Q(tasks__status='to-do')),
         tasks_high_prio_count=Count('tasks', filter=Q(tasks__priority='high')),
     )
-
-
-def create_board_with_annotations(serializer, user):
-    """
-    Creates a Board using the serializer and sets the owner and members.
-    Returns the annotated Board instance.
-    """
-    board = serializer.save()
-    board.members.set(User.objects.filter(
-        id__in=[*serializer.validated_data.get('members', []), user.id]))
-    annotated_board = get_annotated_boards_for_user(user).filter(id=board.id).first()
-    return annotated_board
 
 
 def get_task_for_user(task_id, user):

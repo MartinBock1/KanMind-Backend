@@ -1,7 +1,7 @@
 from rest_framework.views import APIView
-from rest_framework import generics, status
+from rest_framework import generics, status, viewsets
+from rest_framework.decorators import action
 from rest_framework.response import Response
-from rest_framework.generics import ListAPIView
 from rest_framework.permissions import IsAuthenticated
 
 from django.db.models import Count, Q
@@ -13,93 +13,94 @@ from .permissions import IsOwnerOrMember, IsBoardMemberOrReadOnly
 from .serializers import (
     BoardListSerializer,
     BoardDetailSerializer,
+    BoardCreateSerializer,
     UserSerializer,
     TaskSerializer,
     TaskDetailSerializer,
     CommentSerializer,
 )
 from .helpers import (
-    get_serializer_class_for_method, 
-    get_annotated_boards_for_user, 
-    create_board_with_annotations,
+    get_annotated_boards_for_user,
+    create_board_with_members_and_annotations,
+    update_task_with_permission_check,
     get_task_for_user,
+    get_tasks_for_reviewer,
+    get_tasks_assigned_to_user,
     get_comments_for_task,
-    create_comment,    
+    create_comment,
 )
 
 
-class BoardListCreateView(generics.ListCreateAPIView):
+class BoardViewSet(viewsets.ModelViewSet):
     """
-    API view for listing and creating boards.
+    ViewSet for managing Board objects.
 
-    - GET: Returns a list of boards the current user owns or is a member of,
-      with annotation data (e.g., member count, ticket count).
-    - POST: Creates a new board and automatically includes the requesting user
-      as both the owner and a member. Returns the newly created board with annotations.
+    Supports the following actions:
+    - list: Returns all boards the user owns or is a member of, with annotations.
+    - retrieve: Returns detailed information about a specific board.
+    - create: Creates a new board and automatically adds the creator as owner and member.
+    - update/partial_update/destroy: Available only to board owners or members (permissions enforced).
 
-    This view uses dynamic serializer selection and helper functions
-    to keep the logic clean and reusable.
+    Uses different serializers per action to optimize data representation.
     """
     permission_classes = [IsAuthenticated]
 
-    def get_serializer_class(self):
-        """
-        Selects the serializer class based on the HTTP method.
-        - POST -> BoardCreateSerializer
-        - GET  -> BoardListSerializer
-        """
-        return get_serializer_class_for_method(self.request.method)
-
     def get_queryset(self):
         """
-        Returns the queryset of boards owned by or shared with the current user,
-        annotated with:
-        - Number of members
-        - Number of tickets
-        - Number of tasks with status 'to-do'
-        - Number of tasks with high priority
+        Returns the appropriate queryset depending on the action:
+        - list: Boards related to the user (owned or as a member), annotated with metadata.
+        - other actions: All boards.
         """
-        return get_annotated_boards_for_user(self.request.user)
+        if self.action == 'list':
+            return get_annotated_boards_for_user(self.request.user)
+        return Board.objects.all()
+
+    def get_serializer_class(self):
+        """
+        Chooses the appropriate serializer class based on the current action:
+        - list: Uses BoardListSerializer
+        - retrieve: Uses BoardDetailSerializer
+        - create: Uses BoardCreateSerializer
+        - fallback/default: BoardDetailSerializer
+        """
+        if self.action == 'list':
+            return BoardListSerializer
+        elif self.action == 'retrieve':
+            return BoardDetailSerializer
+        elif self.action == 'create':
+            return BoardCreateSerializer
+        return BoardDetailSerializer
+
+    def perform_create(self, serializer):
+        """
+        Internal method to save the board with the current user as owner.
+        The actual creation logic including member assignment and annotation
+        is handled in the custom create method.
+        """
+        self.board = serializer.save(owner=self.request.user)
 
     def create(self, request, *args, **kwargs):
         """
         Handles POST requests to create a new board.
-        - Validates incoming data using BoardCreateSerializer.
-        - Adds the current user as owner and member.
-        - Returns the created board serialized via BoardListSerializer,
-          including all annotations.
+
+        - Validates the incoming data.
+        - Assigns the current user as owner and member.
+        - Returns the created board with annotations using BoardListSerializer.
         """
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
-        annotated_board = create_board_with_annotations(serializer, request.user)
-        output_serializer = BoardListSerializer(annotated_board)
+        board = create_board_with_members_and_annotations(serializer, request.user)
+        output_serializer = BoardListSerializer(board)
         return Response(output_serializer.data, status=status.HTTP_201_CREATED)
 
-
-class BoardDetailView(generics.RetrieveUpdateDestroyAPIView):
-    """
-    API view for retrieving, updating, or deleting a single board.
-
-    - GET: Retrieve detailed information about a specific board.
-    - PUT/PATCH: Update the title or members of the board.
-    - DELETE: Delete the board (only allowed for the owner).
-
-    Permissions:
-        Only the board owner or a board member can access this view.
-        Updates and deletions may be restricted further in the serializer or permission logic.
-
-    Attributes:
-        permission_classes (list): List of permission classes required to access the view.
-        serializer_class (BoardDetailSerializer): Serializer used for data validation and output.
-        queryset (QuerySet): QuerySet used to retrieve the board instance.
-        lookup_field (str): Model field used for lookup (primary key here is 'id').
-        lookup_url_kwarg (str): URL keyword argument used to pass the board ID.
-    """
-    permission_classes = [IsOwnerOrMember]
-    serializer_class = BoardDetailSerializer
-    queryset = Board.objects.all()
-    lookup_field = 'id'
-    lookup_url_kwarg = 'board_id'
+    def get_permissions(self):
+        """
+        Applies object-level permission checks for retrieve, update, partial_update, and destroy.
+        For other actions, only authentication is required.
+        """
+        if self.action in ['retrieve', 'update', 'partial_update', 'destroy']:
+            return [IsOwnerOrMember()]
+        return super().get_permissions()
 
 
 class EmailCheckView(APIView):
@@ -144,127 +145,80 @@ class EmailCheckView(APIView):
                             status=status.HTTP_404_NOT_FOUND)
 
 
-class TaskListView(generics.ListCreateAPIView):
+class TaskViewSet(viewsets.ModelViewSet):
     """
-    API view to list all tasks or create a new task.
+    ViewSet for managing Task objects.
 
-    Methods:
-        - GET: Returns a list of all tasks available in the system.
-          Each task includes an annotated 'comments_count' field, which indicates
-          how many comments are associated with it. Only authenticated users can access this list.
-        
-        - POST: Allows the creation of a new task. The user must be authenticated.
-          Additional logic (e.g. assigning the creator automatically) can be added
-          via the `perform_create()` method.
-
-    Permissions:
-        - Access is restricted to authenticated users only.
-
-    Attributes:
-        permission_classes (list): Specifies that only authenticated users can access this view.
-        serializer_class (TaskSerializer): Specifies the serializer used for both GET and POST
-        operations.
-
-    Notes:
-        - The queryset is overridden via `get_queryset()` to dynamically annotate
-          each task with `comments_count`, using Django's `Count` aggregation.
-        - The field `comments_count` is not part of the Task model itself, but added at query
-          time.
-    """
-    permission_classes = [IsAuthenticated]
-    # queryset = Task.objects.all()
-    serializer_class = TaskSerializer
+    Supports the following actions:
+    - list: Lists all tasks with an annotated comments count.
+    - retrieve: Returns detailed information for a specific task.
+    - create: Creates a new task (default serializer used).
+    - update/partial_update: Updates a task with permission checks.
+    - destroy: Deletes a task.
     
-    def get_queryset(self):
-        return Task.objects.annotate(
-            comments_count=Count('comments')
-        )
-
-    def perform_create(self, serializer):
-        """
-        Called when saving a new task instance via POST.
-        This method can be extended to add additional logic (e.g., auto-assigning creator).
-        """
-        serializer.save()
-
-
-class TaskDetailView(generics.RetrieveUpdateDestroyAPIView):
-    """
-    API view for retrieving, updating, or deleting a single task.
-
-    - GET: Retrieve detailed information about a specific task.
-    - PUT/PATCH: Update task fields such as title, status, priority, assignee, etc.
-    - DELETE: Delete the task (typically restricted to board members or owners).
+    Additional custom actions:
+    - reviewing: Lists tasks where the current user is the reviewer.
+    - assigned_to_me: Lists tasks assigned to the current user.
 
     Permissions:
-        - Only authenticated users can access this view.
-        - Updates and deletions are restricted to board members or the board owner
-          via the IsBoardMemberOrReadOnly permission class.
-
-    Attributes:
-        permission_classes (list): Permissions required to access or modify the task.
-        serializer_class (TaskDetailSerializer): Serializer for validating and returning task details.
-        queryset (QuerySet): The set of all Task objects (used for lookup).
-        lookup_field (str): The model field used to retrieve the task (here, 'id').
-        lookup_url_kwarg (str): The keyword argument from the URL that supplies the task ID.
+    - Requires authentication for all actions.
+    - Write access limited to board members or owners (IsBoardMemberOrReadOnly).
     """
     permission_classes = [IsAuthenticated, IsBoardMemberOrReadOnly]
-    serializer_class = TaskDetailSerializer
-    queryset = Task.objects.all()
-    lookup_field = 'id'
-    lookup_url_kwarg = 'task_id'
-
-
-class TasksReviewingView(ListAPIView):
-    """
-    API view to list all tasks where the current user is assigned as the reviewer.
-
-    - GET: Returns a list of tasks the authenticated user is responsible for reviewing.
-
-    Permissions:
-        - Only authenticated users can access this view.
-
-    Attributes:
-        permission_classes (list): Ensures the user is authenticated.
-        serializer_class (TaskSerializer): Serializer used to represent task data.
-    """
-    permission_classes = [IsAuthenticated]
-    serializer_class = TaskSerializer
 
     def get_queryset(self):
         """
-        Returns a queryset of tasks where the current user is set as the reviewer.
-
-        Returns:
-            QuerySet: Tasks filtered by reviewer equal to the current user.
+        Returns a queryset of all tasks annotated with the count of related comments.
         """
-        return Task.objects.filter(reviewer=self.request.user)
+        return Task.objects.annotate(comments_count=Count('comments'))
 
-
-class TasksAssignedToMeView(ListAPIView):
-    """
-    API view to list all tasks assigned to the currently authenticated user.
-
-    - GET: Returns a list of tasks where the current user is set as the assignee.
-
-    Permissions:
-        - Only authenticated users can access this view.
-
-    Attributes:
-        permission_classes (list): Ensures the user is authenticated.
-        serializer_class (TaskSerializer): Serializer used to return task data.
-    """
-    permission_classes = [IsAuthenticated]
-    serializer_class = TaskSerializer
-
-    def get_queryset(self):
+    def get_serializer_class(self):
         """
-        Returns a queryset of tasks assigned to the current user.
-
-        Returns:
-            QuerySet: Tasks where assignee equals the current user.
+        Selects serializer class based on the action:
+        - For retrieve, update, partial_update, and destroy: TaskDetailSerializer.
+        - For list and create: TaskSerializer.
         """
-        return Task.objects.filter(assignee=self.request.user)
+        if self.action in ['retrieve', 'update', 'partial_update', 'destroy']:
+            return TaskDetailSerializer
+        return TaskSerializer
+
+    def perform_update(self, serializer):
+        """
+        Overrides update behavior to validate and update the task instance
+        with permission checks before saving.
+        """
+        instance = self.get_object()
+        update_task_with_permission_check(instance, serializer.validated_data, self.request.user)
+
+    @action(detail=False, methods=['get'], url_path='reviewing')
+    def reviewing(self, request):
+        """
+        Custom action to list all tasks for which the current user is the reviewer.
+        Supports pagination.
+        """
+        tasks = get_tasks_for_reviewer(request.user)
+        page = self.paginate_queryset(tasks)
+        if page is not None:
+            serializer = self.get_serializer(page, many=True)
+            return self.get_paginated_response(serializer.data)
+
+        serializer = self.get_serializer(tasks, many=True)
+        return Response(serializer.data)
+
+    @action(detail=False, methods=['get'], url_path='assigned_to_me')
+    def assigned_to_me(self, request):
+        """
+        Custom action to list all tasks assigned to the current user.
+        Supports pagination.
+        """
+        tasks = get_tasks_assigned_to_user(request.user)
+        page = self.paginate_queryset(tasks)
+        if page is not None:
+            serializer = self.get_serializer(page, many=True)
+            return self.get_paginated_response(serializer.data)
+
+        serializer = self.get_serializer(tasks, many=True)
+        return Response(serializer.data)
 
 
 class TaskCommentListView(generics.ListCreateAPIView):

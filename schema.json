@@ -1,0 +1,1094 @@
+openapi: 3.0.3
+info:
+  title: KanMind API
+  version: 1.0.0
+  description: API documentation for the KanMind project
+paths:
+  /api/boards/:
+    get:
+      operationId: api_boards_list
+      description: |-
+        ViewSet for managing Board objects.
+
+        Supports the following actions:
+        - list: Returns all boards the user owns or is a member of, with annotations.
+        - retrieve: Returns detailed information about a specific board.
+        - create: Creates a new board and automatically adds the creator as owner and member.
+        - update/partial_update/destroy: Available only to board owners or members (permissions enforced).
+
+        Uses different serializers per action to optimize data representation.
+      tags:
+      - api
+      security:
+      - tokenAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/BoardList'
+          description: ''
+    post:
+      operationId: api_boards_create
+      description: |-
+        Handles POST requests to create a new board.
+
+        - Validates the incoming data.
+        - Assigns the current user as owner and member.
+        - Returns the created board with annotations using BoardListSerializer.
+      tags:
+      - api
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BoardCreate'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/BoardCreate'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/BoardCreate'
+        required: true
+      security:
+      - tokenAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BoardCreate'
+          description: ''
+  /api/boards/{id}/:
+    get:
+      operationId: api_boards_retrieve
+      description: |-
+        ViewSet for managing Board objects.
+
+        Supports the following actions:
+        - list: Returns all boards the user owns or is a member of, with annotations.
+        - retrieve: Returns detailed information about a specific board.
+        - create: Creates a new board and automatically adds the creator as owner and member.
+        - update/partial_update/destroy: Available only to board owners or members (permissions enforced).
+
+        Uses different serializers per action to optimize data representation.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this Board.
+        required: true
+      tags:
+      - api
+      security:
+      - tokenAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BoardDetail'
+          description: ''
+    put:
+      operationId: api_boards_update
+      description: |-
+        ViewSet for managing Board objects.
+
+        Supports the following actions:
+        - list: Returns all boards the user owns or is a member of, with annotations.
+        - retrieve: Returns detailed information about a specific board.
+        - create: Creates a new board and automatically adds the creator as owner and member.
+        - update/partial_update/destroy: Available only to board owners or members (permissions enforced).
+
+        Uses different serializers per action to optimize data representation.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this Board.
+        required: true
+      tags:
+      - api
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BoardDetail'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/BoardDetail'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/BoardDetail'
+        required: true
+      security:
+      - tokenAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BoardDetail'
+          description: ''
+    patch:
+      operationId: api_boards_partial_update
+      description: |-
+        ViewSet for managing Board objects.
+
+        Supports the following actions:
+        - list: Returns all boards the user owns or is a member of, with annotations.
+        - retrieve: Returns detailed information about a specific board.
+        - create: Creates a new board and automatically adds the creator as owner and member.
+        - update/partial_update/destroy: Available only to board owners or members (permissions enforced).
+
+        Uses different serializers per action to optimize data representation.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this Board.
+        required: true
+      tags:
+      - api
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedBoardDetail'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedBoardDetail'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedBoardDetail'
+      security:
+      - tokenAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BoardDetail'
+          description: ''
+    delete:
+      operationId: api_boards_destroy
+      description: |-
+        ViewSet for managing Board objects.
+
+        Supports the following actions:
+        - list: Returns all boards the user owns or is a member of, with annotations.
+        - retrieve: Returns detailed information about a specific board.
+        - create: Creates a new board and automatically adds the creator as owner and member.
+        - update/partial_update/destroy: Available only to board owners or members (permissions enforced).
+
+        Uses different serializers per action to optimize data representation.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this Board.
+        required: true
+      tags:
+      - api
+      security:
+      - tokenAuth: []
+      responses:
+        '204':
+          description: No response body
+  /api/email-check/:
+    get:
+      operationId: api_email_check_retrieve
+      description: |-
+        Handles GET requests to check for a user by email.
+
+        Args:
+            request (Request): The incoming HTTP request.
+
+        Returns:
+            Response: JSON response containing either user data,
+                      an error for missing email,
+                      or an error if no matching user is found.
+      tags:
+      - api
+      security:
+      - tokenAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/login/:
+    post:
+      operationId: api_login_create
+      tags:
+      - api
+      requestBody:
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/CustomAuthToken'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/CustomAuthToken'
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CustomAuthToken'
+        required: true
+      security:
+      - tokenAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CustomAuthToken'
+          description: ''
+  /api/registration/:
+    post:
+      operationId: api_registration_create
+      tags:
+      - api
+      security:
+      - tokenAuth: []
+      - {}
+      responses:
+        '200':
+          description: No response body
+  /api/tasks/:
+    get:
+      operationId: api_tasks_list
+      description: |-
+        ViewSet for managing Task objects.
+
+        Supports the following actions:
+        - list: Lists all tasks with an annotated comments count.
+        - retrieve: Returns detailed information for a specific task.
+        - create: Creates a new task (default serializer used).
+        - update/partial_update: Updates a task with permission checks.
+        - destroy: Deletes a task.
+
+        Additional custom actions:
+        - reviewing: Lists tasks where the current user is the reviewer.
+        - assigned_to_me: Lists tasks assigned to the current user.
+
+        Permissions:
+        - Requires authentication for all actions.
+        - Write access limited to board members or owners (IsBoardMemberOrReadOnly).
+      tags:
+      - api
+      security:
+      - tokenAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Task'
+          description: ''
+    post:
+      operationId: api_tasks_create
+      description: |-
+        ViewSet for managing Task objects.
+
+        Supports the following actions:
+        - list: Lists all tasks with an annotated comments count.
+        - retrieve: Returns detailed information for a specific task.
+        - create: Creates a new task (default serializer used).
+        - update/partial_update: Updates a task with permission checks.
+        - destroy: Deletes a task.
+
+        Additional custom actions:
+        - reviewing: Lists tasks where the current user is the reviewer.
+        - assigned_to_me: Lists tasks assigned to the current user.
+
+        Permissions:
+        - Requires authentication for all actions.
+        - Write access limited to board members or owners (IsBoardMemberOrReadOnly).
+      tags:
+      - api
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Task'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/Task'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/Task'
+        required: true
+      security:
+      - tokenAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Task'
+          description: ''
+  /api/tasks/{id}/:
+    get:
+      operationId: api_tasks_retrieve
+      description: |-
+        ViewSet for managing Task objects.
+
+        Supports the following actions:
+        - list: Lists all tasks with an annotated comments count.
+        - retrieve: Returns detailed information for a specific task.
+        - create: Creates a new task (default serializer used).
+        - update/partial_update: Updates a task with permission checks.
+        - destroy: Deletes a task.
+
+        Additional custom actions:
+        - reviewing: Lists tasks where the current user is the reviewer.
+        - assigned_to_me: Lists tasks assigned to the current user.
+
+        Permissions:
+        - Requires authentication for all actions.
+        - Write access limited to board members or owners (IsBoardMemberOrReadOnly).
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this Task.
+        required: true
+      tags:
+      - api
+      security:
+      - tokenAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TaskDetail'
+          description: ''
+    put:
+      operationId: api_tasks_update
+      description: |-
+        ViewSet for managing Task objects.
+
+        Supports the following actions:
+        - list: Lists all tasks with an annotated comments count.
+        - retrieve: Returns detailed information for a specific task.
+        - create: Creates a new task (default serializer used).
+        - update/partial_update: Updates a task with permission checks.
+        - destroy: Deletes a task.
+
+        Additional custom actions:
+        - reviewing: Lists tasks where the current user is the reviewer.
+        - assigned_to_me: Lists tasks assigned to the current user.
+
+        Permissions:
+        - Requires authentication for all actions.
+        - Write access limited to board members or owners (IsBoardMemberOrReadOnly).
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this Task.
+        required: true
+      tags:
+      - api
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TaskDetail'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/TaskDetail'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/TaskDetail'
+        required: true
+      security:
+      - tokenAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TaskDetail'
+          description: ''
+    patch:
+      operationId: api_tasks_partial_update
+      description: |-
+        ViewSet for managing Task objects.
+
+        Supports the following actions:
+        - list: Lists all tasks with an annotated comments count.
+        - retrieve: Returns detailed information for a specific task.
+        - create: Creates a new task (default serializer used).
+        - update/partial_update: Updates a task with permission checks.
+        - destroy: Deletes a task.
+
+        Additional custom actions:
+        - reviewing: Lists tasks where the current user is the reviewer.
+        - assigned_to_me: Lists tasks assigned to the current user.
+
+        Permissions:
+        - Requires authentication for all actions.
+        - Write access limited to board members or owners (IsBoardMemberOrReadOnly).
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this Task.
+        required: true
+      tags:
+      - api
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedTaskDetail'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedTaskDetail'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedTaskDetail'
+      security:
+      - tokenAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TaskDetail'
+          description: ''
+    delete:
+      operationId: api_tasks_destroy
+      description: |-
+        ViewSet for managing Task objects.
+
+        Supports the following actions:
+        - list: Lists all tasks with an annotated comments count.
+        - retrieve: Returns detailed information for a specific task.
+        - create: Creates a new task (default serializer used).
+        - update/partial_update: Updates a task with permission checks.
+        - destroy: Deletes a task.
+
+        Additional custom actions:
+        - reviewing: Lists tasks where the current user is the reviewer.
+        - assigned_to_me: Lists tasks assigned to the current user.
+
+        Permissions:
+        - Requires authentication for all actions.
+        - Write access limited to board members or owners (IsBoardMemberOrReadOnly).
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this Task.
+        required: true
+      tags:
+      - api
+      security:
+      - tokenAuth: []
+      responses:
+        '204':
+          description: No response body
+  /api/tasks/{task_id}/comments/:
+    get:
+      operationId: api_tasks_comments_list
+      description: |-
+        API view to list or create comments on a specific task.
+
+        Only users who are members or owners of the board associated with the task
+        are allowed to access or create comments via this endpoint.
+
+        Methods:
+            get_task:
+                Retrieves the Task instance by ID and verifies the requesting user's
+                membership or ownership on the related board. Raises PermissionDenied
+                if the user is unauthorized.
+
+            get_queryset:
+                Returns all comments related to the task, ordered by creation date.
+
+            perform_create:
+                Creates a new comment associated with the task and the authenticated user.
+      parameters:
+      - in: path
+        name: task_id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - api
+      security:
+      - tokenAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Comment'
+          description: ''
+    post:
+      operationId: api_tasks_comments_create
+      description: |-
+        API view to list or create comments on a specific task.
+
+        Only users who are members or owners of the board associated with the task
+        are allowed to access or create comments via this endpoint.
+
+        Methods:
+            get_task:
+                Retrieves the Task instance by ID and verifies the requesting user's
+                membership or ownership on the related board. Raises PermissionDenied
+                if the user is unauthorized.
+
+            get_queryset:
+                Returns all comments related to the task, ordered by creation date.
+
+            perform_create:
+                Creates a new comment associated with the task and the authenticated user.
+      parameters:
+      - in: path
+        name: task_id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - api
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Comment'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/Comment'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/Comment'
+        required: true
+      security:
+      - tokenAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Comment'
+          description: ''
+  /api/tasks/{task_id}/comments/{comment_id}/:
+    delete:
+      operationId: api_tasks_comments_destroy
+      description: |-
+        Deletes a comment if the requesting user is the comment's author.
+
+        Args:
+            request (Request): The incoming HTTP request.
+            task_id (int): ID of the task to which the comment belongs.
+            comment_id (int): ID of the comment to delete.
+
+        Returns:
+            Response: 204 on success, 403 if not author, or 404 if not found.
+      parameters:
+      - in: path
+        name: comment_id
+        schema:
+          type: integer
+        required: true
+      - in: path
+        name: task_id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - api
+      security:
+      - tokenAuth: []
+      responses:
+        '204':
+          description: No response body
+  /api/tasks/assigned_to_me/:
+    get:
+      operationId: api_tasks_assigned_to_me_retrieve
+      description: |-
+        Custom action to list all tasks assigned to the current user.
+        Supports pagination.
+      tags:
+      - api
+      security:
+      - tokenAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Task'
+          description: ''
+  /api/tasks/reviewing/:
+    get:
+      operationId: api_tasks_reviewing_retrieve
+      description: |-
+        Custom action to list all tasks for which the current user is the reviewer.
+        Supports pagination.
+      tags:
+      - api
+      security:
+      - tokenAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Task'
+          description: ''
+components:
+  schemas:
+    BoardCreate:
+      type: object
+      description: |-
+        Serializer for creating a new Board instance.
+
+        Fields:
+            - title: The title of the board.
+            - members: A list of user IDs to be added as members of the board.
+
+        Meta:
+            Specifies the Board model and includes the title and members fields.
+
+        Methods:
+            - create(validated_data):
+                Creates a new Board with the given title and sets the requesting user as the owner.
+                Adds the provided member user IDs, along with the owner, to the board's members.
+
+            - to_representation(instance):
+                Returns a serialized representation of the newly created board using
+                BoardListSerializer.
+      properties:
+        title:
+          type: string
+          maxLength: 255
+        members:
+          type: array
+          items:
+            type: integer
+      required:
+      - members
+      - title
+    BoardDetail:
+      type: object
+      description: |-
+        Serializer for detailed view of a Board instance.
+
+        Fields:
+            - members: List of user IDs to set as members (write-only, optional).
+            - tasks: Nested list of tasks related to the board (read-only).
+            - members_display: Nested representation of the board members as user objects (read-only).
+
+        Meta:
+            Specifies the Board model and includes fields for detailed board data including membership
+            and tasks.
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        title:
+          type: string
+          maxLength: 255
+        owner_id:
+          type: integer
+          readOnly: true
+        members:
+          type: array
+          items:
+            type: integer
+          writeOnly: true
+        members_display:
+          type: array
+          items:
+            $ref: '#/components/schemas/User'
+          readOnly: true
+        tasks:
+          type: array
+          items:
+            $ref: '#/components/schemas/Task'
+      required:
+      - id
+      - members_display
+      - owner_id
+      - tasks
+      - title
+    BoardList:
+      type: object
+      description: |-
+        Serializer for listing Board instances with additional aggregated fields.
+
+        Fields:
+            - member_count: Number of members in the board.
+            - ticket_count: Total number of tickets associated with the board.
+            - tasks_to_do_count: Number of tasks with status "to do".
+            - tasks_high_prio_count: Number of tasks marked as high priority.
+            - owner_id: ID of the owner of the board.
+
+        Meta:
+            Defines the model as Board and includes all relevant fields for summary display.
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        title:
+          type: string
+          maxLength: 255
+        member_count:
+          type: integer
+        ticket_count:
+          type: integer
+        tasks_to_do_count:
+          type: integer
+        tasks_high_prio_count:
+          type: integer
+        owner_id:
+          type: integer
+          readOnly: true
+      required:
+      - id
+      - member_count
+      - owner_id
+      - tasks_high_prio_count
+      - tasks_to_do_count
+      - ticket_count
+      - title
+    Comment:
+      type: object
+      description: |-
+        Serializer for Comment model that converts Comment instances
+        to JSON and validates input data for creating/updating comments.
+
+        Attributes:
+            author (SerializerMethodField): Returns the full name of the author
+                if available, otherwise the username. Read-only.
+            created_at (DateTimeField): The timestamp when the comment was created,
+                formatted as ISO-like string. Read-only.
+
+        Meta:
+            model (Comment): The Comment model being serialized.
+            fields (list): List of model fields included in serialization.
+            read_only_fields (list): Fields that cannot be modified by input.
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        author:
+          type: string
+          readOnly: true
+        content:
+          type: string
+      required:
+      - author
+      - content
+      - created_at
+      - id
+    CustomAuthToken:
+      type: object
+      properties:
+        email:
+          type: string
+          format: email
+        password:
+          type: string
+      required:
+      - email
+      - password
+    PatchedBoardDetail:
+      type: object
+      description: |-
+        Serializer for detailed view of a Board instance.
+
+        Fields:
+            - members: List of user IDs to set as members (write-only, optional).
+            - tasks: Nested list of tasks related to the board (read-only).
+            - members_display: Nested representation of the board members as user objects (read-only).
+
+        Meta:
+            Specifies the Board model and includes fields for detailed board data including membership
+            and tasks.
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        title:
+          type: string
+          maxLength: 255
+        owner_id:
+          type: integer
+          readOnly: true
+        members:
+          type: array
+          items:
+            type: integer
+          writeOnly: true
+        members_display:
+          type: array
+          items:
+            $ref: '#/components/schemas/User'
+          readOnly: true
+        tasks:
+          type: array
+          items:
+            $ref: '#/components/schemas/Task'
+    PatchedTaskDetail:
+      type: object
+      description: |-
+        Serializer for detailed view and update of Task instances.
+
+        Fields:
+            - assignee_id: Integer ID for assigning a user to the task (write-only).
+            - reviewer_id: Integer ID for assigning a reviewer to the task (write-only).
+            - assignee: Nested user representation of the assignee (read-only).
+            - reviewer: Nested user representation of the reviewer (read-only).
+
+        Meta:
+            Defines the model as Task and lists all included fields.
+
+        Methods:
+            - validate(attrs):
+                Validates incoming data using external helper function,
+                ensuring user permissions and field constraints.
+
+            - update(instance, validated_data):
+                Updates a Task instance using external helper function,
+                handling related user fields and other attributes.
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        title:
+          type: string
+          maxLength: 255
+        description:
+          type: string
+        status:
+          $ref: '#/components/schemas/StatusEnum'
+        priority:
+          $ref: '#/components/schemas/PriorityEnum'
+        assignee_id:
+          type: integer
+          writeOnly: true
+          nullable: true
+        assignee:
+          allOf:
+          - $ref: '#/components/schemas/User'
+          readOnly: true
+        reviewer_id:
+          type: integer
+          writeOnly: true
+          nullable: true
+        reviewer:
+          allOf:
+          - $ref: '#/components/schemas/User'
+          readOnly: true
+        due_date:
+          type: string
+          format: date
+          nullable: true
+    PriorityEnum:
+      enum:
+      - low
+      - medium
+      - high
+      type: string
+      description: |-
+        * `low` - Low
+        * `medium` - Medium
+        * `high` - High
+    StatusEnum:
+      enum:
+      - to-do
+      - in-progress
+      - review
+      - done
+      type: string
+      description: |-
+        * `to-do` - To Do
+        * `in-progress` - In Progress
+        * `review` - Review
+        * `done` - Done
+    Task:
+      type: object
+      description: |-
+        Serializer for the Task model. Handles both serialization and deserialization
+        of Task instances for API interactions.
+
+        Fields:
+            - board (int): Foreign key to the related Board. Writable.
+            - title (str): The title of the task.
+            - description (str): A detailed description of the task.
+            - status (str): The current status of the task (e.g., "to-do", "in-progress").
+            - priority (str): The priority level of the task (e.g., "low", "high").
+            - due_date (date): The optional deadline for the task.
+
+            - assignee (UserSerializer): Nested read-only representation of the assigned user.
+            - assignee_id (int): Write-only field used to set the assignee by their ID.
+            - reviewer (UserSerializer): Nested read-only representation of the reviewer.
+            - reviewer_id (int): Write-only field used to set the reviewer by their ID.
+
+            - comments_count (int): Read-only field indicating the number of comments associated
+              with this task. This value must be annotated in the view using Count('comments').
+
+        Notes:
+            - The 'assignee_id' and 'reviewer_id' fields are mapped to their respective User model
+              relations via the `source` keyword and are used for input only.
+            - The `comments_count` must be provided via annotation in the queryset, as it's not
+              a model field.
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        board:
+          type: integer
+        title:
+          type: string
+          maxLength: 255
+        description:
+          type: string
+        status:
+          $ref: '#/components/schemas/StatusEnum'
+        priority:
+          $ref: '#/components/schemas/PriorityEnum'
+        assignee:
+          allOf:
+          - $ref: '#/components/schemas/User'
+          readOnly: true
+        assignee_id:
+          type: integer
+          writeOnly: true
+        reviewer:
+          allOf:
+          - $ref: '#/components/schemas/User'
+          readOnly: true
+        reviewer_id:
+          type: integer
+          writeOnly: true
+        due_date:
+          type: string
+          format: date
+          nullable: true
+        comments_count:
+          type: integer
+          readOnly: true
+      required:
+      - assignee
+      - board
+      - comments_count
+      - description
+      - id
+      - reviewer
+      - title
+    TaskDetail:
+      type: object
+      description: |-
+        Serializer for detailed view and update of Task instances.
+
+        Fields:
+            - assignee_id: Integer ID for assigning a user to the task (write-only).
+            - reviewer_id: Integer ID for assigning a reviewer to the task (write-only).
+            - assignee: Nested user representation of the assignee (read-only).
+            - reviewer: Nested user representation of the reviewer (read-only).
+
+        Meta:
+            Defines the model as Task and lists all included fields.
+
+        Methods:
+            - validate(attrs):
+                Validates incoming data using external helper function,
+                ensuring user permissions and field constraints.
+
+            - update(instance, validated_data):
+                Updates a Task instance using external helper function,
+                handling related user fields and other attributes.
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        title:
+          type: string
+          maxLength: 255
+        description:
+          type: string
+        status:
+          $ref: '#/components/schemas/StatusEnum'
+        priority:
+          $ref: '#/components/schemas/PriorityEnum'
+        assignee_id:
+          type: integer
+          writeOnly: true
+          nullable: true
+        assignee:
+          allOf:
+          - $ref: '#/components/schemas/User'
+          readOnly: true
+        reviewer_id:
+          type: integer
+          writeOnly: true
+          nullable: true
+        reviewer:
+          allOf:
+          - $ref: '#/components/schemas/User'
+          readOnly: true
+        due_date:
+          type: string
+          format: date
+          nullable: true
+      required:
+      - assignee
+      - description
+      - id
+      - reviewer
+      - title
+    User:
+      type: object
+      description: |-
+        Serializer for the User model.
+
+        Adds a custom field 'fullname' that maps to the user's 'username'.
+
+        Fields:
+            id (int): The unique ID of the user.
+            email (str): The email address of the user.
+            fullname (str): The username of the user, exposed as 'fullname'.
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        email:
+          type: string
+          format: email
+          title: Email address
+          maxLength: 254
+        fullname:
+          type: string
+      required:
+      - fullname
+      - id
+  securitySchemes:
+    tokenAuth:
+      type: apiKey
+      in: header
+      name: Authorization
+      description: Token-based authentication with required prefix "Token"
