@@ -1,13 +1,13 @@
 # Django project - set up KanMind backend
 
-**1. clone repository** 
+**1. clone repository**<br>
 Copy the existing project to your computer: 
 ```sh
 git clone <REPOSITORY-LINK>
 cd <Projektordner>
 ```
 
-**2. set up a virtual environment**
+**2. set up a virtual environment**<br>
 Create a virtual environment and activate it:  
 ```sh
 python -m venv env
@@ -16,7 +16,7 @@ source env/bin/activate  # macOS/Linux
 ```
 *Note:* On macOS/Linux you may need to use `python3` instead of `python`.
 
-**3. check & install dependencies**
+**3. check & install dependencies**<br>
 First check if packages are installed and then install the dependencies from the file:  
 ```sh
 pip freeze  # check currently installed packages
@@ -24,13 +24,13 @@ pip install -r requirements.txt  # install packages
 pip freeze  # check whether everything has been installed correctly
 ```
 
-**4. run migrations**
+**4. run migrations**<br>
 Apply the existing migrations (there is **no need** to do `makemigrations` as they are already included):
 ```sh
 python manage.py migrate
 ```
 
-**5. start local server** 
+**5. start local server**<br>
 Start the Django server: 
 ```sh
 python manage.py runserver
