@@ -14,7 +14,7 @@ python -m venv env
 env/Scripts/activate  # Windows
 source env/bin/activate  # macOS/Linux
 ```
-> *Note:* On macOS/Linux you may need to use `python3` instead of `python`.
+*Note:* On macOS/Linux you may need to use `python3` instead of `python`.
 
 **3. check & install dependencies**
 First check if packages are installed and then install the dependencies from the file:  
@@ -36,4 +36,4 @@ Start the Django server:
 python manage.py runserver
 ```
 
-> **Tipp:** If errors occur, check the `settings.py` for paths, database settings or forgotten `.env` files.
+**Tipp:** If errors occur, check the `settings.py` for paths, database settings or forgotten `.env` files.
