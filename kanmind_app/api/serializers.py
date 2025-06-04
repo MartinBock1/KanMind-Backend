@@ -142,25 +142,49 @@ class BoardListSerializer(serializers.ModelSerializer):
 
 class BoardDetailSerializer(serializers.ModelSerializer):
     """
-    Serializer for detailed view of a Board instance.
+    Serializer for detailed representation of a Board instance.
 
-    Fields:
-        - members: List of user IDs to set as members (write-only, optional).
-        - tasks: Nested list of tasks related to the board (read-only).
-        - members_display: Nested representation of the board members as user objects (read-only).
-
-    Meta:
-        Specifies the Board model and includes fields for detailed board data including membership
-        and tasks.
+    - Includes nested serialized members and tasks (read-only).
+    - Used primarily for GET requests (retrieve action).
     """
-    members = serializers.ListField(child=serializers.IntegerField(),
-                                    write_only=True, required=False)
-    tasks = TaskSerializer(many=True)
-    members_display = UserSerializer(source='members', many=True, read_only=True)
+    members = UserSerializer(many=True, read_only=True)
+    tasks = TaskSerializer(many=True, read_only=True)
 
     class Meta:
         model = Board
-        fields = ['id', 'title', 'owner_id', 'members', 'members_display', 'tasks']
+        fields = ['id', 'title', 'owner_id', 'members', 'tasks']
+
+
+class BoardWriteSerializer(serializers.ModelSerializer):
+    """
+    Serializer for creating and updating Board instances.
+
+    - Accepts a list of member IDs for membership updates (write_only).
+    - Provides read-only nested representations of members and owner.
+    - Handles partial updates including member list changes.
+    """
+    members = serializers.ListField(
+        child=serializers.IntegerField(), write_only=True, required=False
+    )
+    members_data = UserSerializer(source='members', many=True, read_only=True)
+    owner_data = UserSerializer(source='owner', read_only=True)
+
+    class Meta:
+        model = Board
+        fields = ['id', 'title', 'members', 'members_data', 'owner_data']
+
+    def update(self, instance, validated_data):
+        
+        member_ids = validated_data.pop('members', None)
+
+        for attr, value in validated_data.items():
+            setattr(instance, attr, value)
+        instance.save()
+
+        if member_ids is not None:
+            instance.members.set(member_ids)
+
+        return instance
 
 
 class BoardCreateSerializer(serializers.ModelSerializer):

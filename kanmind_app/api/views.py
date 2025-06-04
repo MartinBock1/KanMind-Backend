@@ -14,6 +14,7 @@ from .serializers import (
     BoardListSerializer,
     BoardDetailSerializer,
     BoardCreateSerializer,
+    BoardWriteSerializer,
     UserSerializer,
     TaskSerializer,
     TaskDetailSerializer,
@@ -33,23 +34,26 @@ from .helpers import (
 
 class BoardViewSet(viewsets.ModelViewSet):
     """
-    ViewSet for managing Board objects.
+    ViewSet for managing Board objects with action-based serializers and permissions.
 
-    Supports the following actions:
-    - list: Returns all boards the user owns or is a member of, with annotations.
+    Supports:
+    - list: Returns all boards the user owns or is a member of, with additional annotations.
     - retrieve: Returns detailed information about a specific board.
-    - create: Creates a new board and automatically adds the creator as owner and member.
-    - update/partial_update/destroy: Available only to board owners or members (permissions enforced).
+    - create: Creates a new board and assigns the current user as owner and member.
+    - update / partial_update: Updates board details and members.
+    - destroy: Deletes a board (permissions apply).
 
-    Uses different serializers per action to optimize data representation.
+    Permission:
+    - Requires authentication for all actions.
+    - Object-level permission IsOwnerOrMember applied for retrieve, update, partial_update, and destroy actions.
     """
     permission_classes = [IsAuthenticated]
 
     def get_queryset(self):
         """
-        Returns the appropriate queryset depending on the action:
-        - list: Boards related to the user (owned or as a member), annotated with metadata.
-        - other actions: All boards.
+       Return the queryset depending on the current action:
+        - For 'list' action, return boards related to the current user (owned or member), with annotations.
+        - For other actions, return all boards.
         """
         if self.action == 'list':
             return get_annotated_boards_for_user(self.request.user)
@@ -57,11 +61,12 @@ class BoardViewSet(viewsets.ModelViewSet):
 
     def get_serializer_class(self):
         """
-        Chooses the appropriate serializer class based on the current action:
-        - list: Uses BoardListSerializer
-        - retrieve: Uses BoardDetailSerializer
-        - create: Uses BoardCreateSerializer
-        - fallback/default: BoardDetailSerializer
+        Select serializer class based on the current action:
+        - list: BoardListSerializer (simplified list with annotations)
+        - retrieve: BoardDetailSerializer (detailed board info)
+        - create: BoardCreateSerializer (for creating boards)
+        - update / partial_update: BoardWriteSerializer (handle updates with member list)
+        - fallback: BoardDetailSerializer
         """
         if self.action == 'list':
             return BoardListSerializer
@@ -69,23 +74,26 @@ class BoardViewSet(viewsets.ModelViewSet):
             return BoardDetailSerializer
         elif self.action == 'create':
             return BoardCreateSerializer
+        elif self.action in ['update', 'partial_update']:
+            return BoardWriteSerializer
         return BoardDetailSerializer
 
     def perform_create(self, serializer):
         """
-        Internal method to save the board with the current user as owner.
-        The actual creation logic including member assignment and annotation
-        is handled in the custom create method.
+        Save a new Board instance, setting the current user as the owner.
+
+        Note: Additional logic for member assignment and annotation
+        is handled in the overridden create() method.
         """
         self.board = serializer.save(owner=self.request.user)
 
     def create(self, request, *args, **kwargs):
         """
-        Handles POST requests to create a new board.
+        Handle POST requests to create a new board.
 
-        - Validates the incoming data.
-        - Assigns the current user as owner and member.
-        - Returns the created board with annotations using BoardListSerializer.
+        - Validate incoming data.
+        - Assign current user as owner and member.
+        - Return the created board data annotated, serialized with BoardListSerializer.
         """
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
@@ -95,8 +103,10 @@ class BoardViewSet(viewsets.ModelViewSet):
 
     def get_permissions(self):
         """
-        Applies object-level permission checks for retrieve, update, partial_update, and destroy.
-        For other actions, only authentication is required.
+        Return permission classes based on the action:
+
+        - For retrieve, update, partial_update, destroy: use object-level IsOwnerOrMember permission.
+        - For all other actions, require only authentication.
         """
         if self.action in ['retrieve', 'update', 'partial_update', 'destroy']:
             return [IsOwnerOrMember()]
