@@ -102,13 +102,5 @@ Now, you can access the application at http://localhost:8000.
 Testing
 You can run tests to ensure everything is working as expected:
 
-bash
-Kopieren
-Bearbeiten
-python manage.py test
-License
-This project is licensed under the MIT License - see the LICENSE file for details.
-
-knamind is built using Django, Django REST Framework, and a PostgreSQL database. It's designed to streamline task and project management for teams, making collaboration more efficient and organized.
-
-For more information or to contribute, feel free to open an issue or send a pull request!
+    ```bash
+    python manage.py test
