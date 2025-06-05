@@ -159,11 +159,12 @@ class TaskViewSet(viewsets.ModelViewSet):
     """
     ViewSet for managing Task objects.
 
-    Supports the following actions:
-    - list: Lists all tasks with an annotated comments count.
+    This ViewSet supports the following actions:
+    - list: Lists all tasks with an annotated count of related comments.
     - retrieve: Returns detailed information for a specific task.
-    - create: Creates a new task (default serializer used).
-    - update/partial_update: Updates a task with permission checks.
+    - create: Creates a new task.
+    - update: Updates a task with permission checks.
+    - partial_update: Partially updates a task with permission checks.
     - destroy: Deletes a task.
     
     Additional custom actions:
@@ -172,7 +173,7 @@ class TaskViewSet(viewsets.ModelViewSet):
 
     Permissions:
     - Requires authentication for all actions.
-    - Write access limited to board members or owners (IsBoardMemberOrReadOnly).
+    - Write access is limited to board members or owners (IsBoardMemberOrReadOnly).
     """
     permission_classes = [IsAuthenticated, IsBoardMemberOrReadOnly]
 
@@ -198,7 +199,24 @@ class TaskViewSet(viewsets.ModelViewSet):
         with permission checks before saving.
         """
         instance = self.get_object()
-        update_task_with_permission_check(instance, serializer.validated_data, self.request.user)
+        updated_instance = update_task_with_permission_check(
+            instance, serializer.validated_data, self.request.user)
+        updated_serializer = self.get_serializer(updated_instance)
+        return Response(updated_serializer.data, status=status.HTTP_200_OK)
+    
+    def partial_update(self, request, *args, **kwargs):
+        """
+        Overrides the default partial update (PATCH) behavior to immediately reflect changes
+        in the response.
+        """
+        task = self.get_object()
+        user = request.user
+        serializer = self.get_serializer(task, data=request.data, partial=True)
+        serializer.is_valid(raise_exception=True)
+        updated_task = update_task_with_permission_check(task, serializer.validated_data, user)
+        updated_task.refresh_from_db()
+        updated_serializer = self.get_serializer(updated_task)
+        return Response(updated_serializer.data, status=status.HTTP_200_OK)
 
     @action(detail=False, methods=['get'], url_path='reviewing')
     def reviewing(self, request):
@@ -206,14 +224,7 @@ class TaskViewSet(viewsets.ModelViewSet):
         Custom action to list all tasks for which the current user is the reviewer.
         Supports pagination.
         """
-        tasks = get_tasks_for_reviewer(request.user)
-        page = self.paginate_queryset(tasks)
-        if page is not None:
-            serializer = self.get_serializer(page, many=True)
-            return self.get_paginated_response(serializer.data)
-
-        serializer = self.get_serializer(tasks, many=True)
-        return Response(serializer.data)
+        return self.get_tasks_for_user_action(request, get_tasks_for_reviewer)
 
     @action(detail=False, methods=['get'], url_path='assigned_to_me')
     def assigned_to_me(self, request):
@@ -221,14 +232,20 @@ class TaskViewSet(viewsets.ModelViewSet):
         Custom action to list all tasks assigned to the current user.
         Supports pagination.
         """
-        tasks = get_tasks_assigned_to_user(request.user)
+        return self.get_tasks_for_user_action(request, get_tasks_assigned_to_user)
+    
+    def get_tasks_for_user_action(self, request, task_filter_function):
+        """
+        Helper function to get tasks based on custom filters like 'reviewing' or 'assigned_to_me'.
+        """
+        tasks = task_filter_function(request.user)
         page = self.paginate_queryset(tasks)
         if page is not None:
             serializer = self.get_serializer(page, many=True)
             return self.get_paginated_response(serializer.data)
 
         serializer = self.get_serializer(tasks, many=True)
-        return Response(serializer.data)
+        return Response(serializer.data, status=status.HTTP_200_OK)
 
 
 class TaskCommentListView(generics.ListCreateAPIView):

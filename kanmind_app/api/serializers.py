@@ -70,6 +70,12 @@ class TaskSerializer(serializers.ModelSerializer):
             'assignee', 'assignee_id', 'reviewer', 'reviewer_id',
             'due_date', 'comments_count',
         ]
+    
+    def create(self, validated_data):
+        task = Task.objects.create(**validated_data)
+        task.comments_count = 0
+        task.save()
+        return task
 
 
 class TaskDetailSerializer(serializers.ModelSerializer):
@@ -171,7 +177,7 @@ class BoardWriteSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Board
-        fields = ['id', 'title', 'members', 'members_data', 'owner_data']
+        fields = ['id', 'title', 'owner_data', 'members', 'members_data']
 
     def update(self, instance, validated_data):
         
