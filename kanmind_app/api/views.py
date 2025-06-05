@@ -226,7 +226,7 @@ class TaskViewSet(viewsets.ModelViewSet):
         """
         return self.get_tasks_for_user_action(request, get_tasks_for_reviewer)
 
-    @action(detail=False, methods=['get'], url_path='assigned_to_me')
+    @action(detail=False, methods=['get'], url_path='assigned-to-me')
     def assigned_to_me(self, request):
         """
         Custom action to list all tasks assigned to the current user.
