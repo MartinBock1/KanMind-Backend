@@ -98,9 +98,3 @@ Note: On macOS/Linux, python3 may have to be used instead of python.
 Tip: If errors occur, check the `settings.py` for paths, database settings or forgotten `.env` files.
 
 Now, you can access the application at http://localhost:8000.
-
-Testing
-You can run tests to ensure everything is working as expected:
-
-    ```bash
-    python manage.py test
