@@ -1,0 +1,14 @@
+{
+    "cSpell.words": [
+        "asgiref",
+        "django",
+        "djangorestframework",
+        "jsonschema",
+        "kanmind",
+        "rpds",
+        "runserver",
+        "sqlparse",
+        "tzdata",
+        "uritemplate"
+    ]
+}
