@@ -65,12 +65,17 @@ MIDDLEWARE = [
 CSRF_TRUSTED_ORIGINS = [
     'http://127.0.0.1:5500',
     'http://localhost:5500',
+    'https://www.kanmind.martin-bock.info',
 ]
 
 CORS_ALLOWED_ORIGINS = [
     'http://127.0.0.1:5500',
     'http://localhost:5500',
+    'https://www.kanmind.martin-bock.info',
 ]
+
+# Erlaubt dem Browser, Cookies und Authorization-Header mitzusenden
+CORS_ALLOW_CREDENTIALS = True
 
 ROOT_URLCONF = 'core.urls'
 
